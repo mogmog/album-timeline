@@ -1,5 +1,5 @@
    var width = 1000,
-       height = 700,
+       height = 400,
        color = d3.scale.category20b();
 
    var PADDING = 50;
@@ -12,7 +12,11 @@
 
    var lineheight = 20;
 
-   function getData() {
+   // handy: http://alignedleft.com/content/03-tutorials/01-d3/160-axes/5.html
+   // http://alignedleft.com/tutorials/d3/axes
+   var dataset = [];
+
+   function getData(dataset) {
        $.ajax({
            url: 'http://ws.spotify.com/lookup/1/.json',
            type: 'GET',
@@ -25,7 +29,10 @@
            .done(function(data) {
                $.each(data.artist.albums, function(index, item) {
                    getAlbumScore(item.album.href);
+	           dataset.push(item.album.released);
+console.log("pushing - "+ item.album.released);
                });
+
 
                var node = svg.selectAll('.album-node')
                    .data(data.artist.albums)
@@ -40,7 +47,41 @@
                    .text(function(d) {
                        console.log(d);
                        return d.album.name;
-                   });;
+                   });
+
+   	       var xScale = d3.scale.linear()
+		 .domain([d3.min(dataset, function(d) { return d; }), d3.max(dataset, function(d) { return d; })])
+		 .range([PADDING, width - PADDING * 2]);
+	       svg.selectAll("circle")
+			   .data(dataset)
+			   .enter()
+			   .append("circle")
+			   .attr("cx", function(d) {
+			   		return xScale(d);
+			   })
+			   .attr("cy", function(d) {
+					return 100;
+//			   		return yScale(d[1]);
+			   })
+			   .attr("r", function(d) {
+					return 10;
+					// will be based on score
+			   		//return rScale(d[1]);
+			   });
+
+
+   		// create axes
+		console.log(dataset);
+		var xAxis = d3.svg.axis()
+			  .scale(xScale)
+			  .orient("bottom")
+			  .ticks(5)
+			  .tickFormat(d3.format("<"));
+		svg.append("g")
+			.attr("class", "axis")
+			.attr("transform", "translate(0," + (height - PADDING) + ")")
+			.call(xAxis);
+
            })
            .fail(function() {
                console.log("error");
@@ -69,4 +110,4 @@
        });
    }
 
-   getData();
+   getData(dataset);
