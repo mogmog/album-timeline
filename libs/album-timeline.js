@@ -23,6 +23,10 @@
            }
        })
            .done(function(data) {
+               $.each(data.artist.albums, function(index, item) {
+                   getAlbumScore(item.album.href);
+               });
+
                var node = svg.selectAll('.album-node')
                    .data(data.artist.albums)
                    .enter()
@@ -31,20 +35,38 @@
 
                node.append('text')
                    .attr('y', function(d, i) {
-		       console.log('i=' + i);
                        return lineheight * i;
                    })
                    .text(function(d) {
                        console.log(d);
-                       return d.album.name+' '+d.album.released;
-                   });
+                       return d.album.name;
+                   });;
            })
            .fail(function() {
                console.log("error");
            })
    }
 
+   function getAlbumScore(albumHref) {
+       $.ajax({
+           url: 'http://ws.spotify.com/lookup/1/.json',
+           type: 'GET',
+           dataType: 'json',
+           data: {
+               uri: albumHref,
+               extras: 'trackdetail'
+           }
+       }).done(function(data) {
+           var total_pop = 0;
+           // Get popularity for each track and calculate average
+           $.each(data.album.tracks, function(index, track) {
+               total_pop += track.popularity * 100;
+           });
+           console.log(total_pop);
+
+       }).fail(function() {
+           console.log("Error retrieving info for album " + albumId);
+       });
+   }
+
    getData();
-
-
-//function getDates() {}
