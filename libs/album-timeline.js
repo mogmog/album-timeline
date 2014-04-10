@@ -31,12 +31,13 @@
 
                node.append('text')
                    .attr('y', function(d, i) {
+		       console.log('i=' + i);
                        return lineheight * i;
                    })
                    .text(function(d) {
                        console.log(d);
-                       return d.album.name;
-                   });;
+                       return d.album.name+' '+d.album.released;
+                   });
            })
            .fail(function() {
                console.log("error");
@@ -44,3 +45,6 @@
    }
 
    getData();
+
+
+//function getDates() {}
