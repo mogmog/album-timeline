@@ -23,27 +23,38 @@
            }
        })
            .done(function(data) {
+               var processedData = [];
                $.each(data.artist.albums, function(index, item) {
-                   getAlbumScore(item.album.href);
+                   processedData.push({
+                       'name': item.album.name,
+                       'year': item.album.released,
+                       'score': getAlbumScore(item.album.href)
+                   });
                });
 
-               var node = svg.selectAll('.album-node')
-                   .data(data.artist.albums)
-                   .enter()
-                   .append('g')
-                   .attr('class', 'album-node');
+               drawViz(processedData);
 
-               node.append('text')
-                   .attr('y', function(d, i) {
-                       return lineheight * i;
-                   })
-                   .text(function(d) {
-                       return d.album.name;
-                   });;
            })
            .fail(function() {
                console.log("error");
            })
+   }
+
+   function drawViz(data) {
+       var node = svg.selectAll('.album-node')
+           .data(data)
+           .enter()
+           .append('g')
+           .attr('class', 'album-node');
+
+       node.append('text')
+           .attr('y', function(d, i) {
+               return lineheight * i;
+           })
+           .text(function(d) {
+               console.log(d);
+               return d.name + ":" + d.year + ":" + d.score;
+           });;
    }
 
    function getAlbumScore(albumHref) {
@@ -62,7 +73,6 @@
                total_pop += track.popularity * 100;
            });
            console.log(total_pop);
-
        }).fail(function() {
            console.log("Error retrieving info for album " + albumId);
        });
