@@ -146,10 +146,11 @@
             .attr("fill", function(d) {
                 return color(d.album.name);
             })
+            .attr("fill-opacity", 0.9)
             .attr("cx", function(d) {
                 return xScale(d.album.released);
             })
-            .attr("cy", 0)
+            .attr("cy", height)
             .transition()
             .duration(1500)
             .attr("cy", function(d) {
@@ -174,6 +175,9 @@
             .attr("x", function(d) {
                 return xScale(d.album.released);
             })
+            .attr("y", height)
+            .transition()
+            .duration(1500)
             .attr("y", function(d) {
                 return yScale(d.score);
             })
