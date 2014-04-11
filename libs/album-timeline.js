@@ -6,7 +6,7 @@
     var PADDING = 50;
     var MAX_RADIUS;
 
-    var svg = d3.select("#container")
+    var svg = d3.select("#vis-container")
         .append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -112,7 +112,7 @@
     // http://alignedleft.com/tutorials/d3/axes
     drawVisualisation = function(data) {
         var dataset = data.artist.albums;
-
+        console.log(data.artist);
         d3.select("#artist-name").text(data.artist.name);
 
         var xScale = d3.scale.linear()
@@ -163,8 +163,7 @@
                 return rScale(d.score);
             });
 
-        // this bit doesn't work atm... i just wanted to see which blobs correspond to which album to 
-        // get a better understanding.
+
         svg.selectAll("text")
             .data(dataset)
             .enter()
@@ -196,5 +195,5 @@
             .call(xAxis);
     }
 
-    getArtist('56ZTgzPBDge0OvCGgMO3OY').then(populateAlbumWithScore).then(drawVisualisation);
+    getArtist('6v8FB84lnmJs434UJf2Mrm').then(populateAlbumWithScore).then(drawVisualisation);
 })();
