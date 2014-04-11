@@ -73,7 +73,8 @@
                             $.each(response.album.tracks, function(index, track) {
                                 total_pop += track.popularity * 100;
                             });
-                            album.score = total_pop;
+                            album.score = total_pop / response.album.tracks.length;
+                            album.trackCount = response.album.tracks.length;
 
                             dfd.resolve(response);
                         }
@@ -83,16 +84,29 @@
         });
 
         return $.when(all(promises)).then(function(results) {
+            artistWithAlbums.artist.albums = _.filter(artistWithAlbums.artist.albums, function(album) {
+                return album.album.availability.territories.match(/GB/) && album.info.type === 'album' && isAnAlbum(album);
+            });
+
             return artistWithAlbums;
         });
 
     }
 
+    isAnAlbum = function(album) {
+        console.log(album);
+        if (album.album.trackCount < 5) //Subjective call!
+            return false;
+        return true;
+    }
 
     // handy: http://alignedleft.com/content/03-tutorials/01-d3/160-axes/5.html
     // http://alignedleft.com/tutorials/d3/axes
     drawVisualisation = function(data) {
         var dataset = data.artist.albums;
+
+        d3.select("#artist-name").text(data.artist.name);
+
         var xScale = d3.scale.linear()
             .domain([d3.min(dataset, function(d) {
                 return d.album.released;
@@ -103,7 +117,6 @@
 
         var yScale = d3.scale.linear()
             .domain([d3.min(dataset, function(d) {
-                console.log(d.score);
                 return d.score;
             }), d3.max(dataset, function(d) {
                 return d.score;
@@ -128,24 +141,27 @@
             .attr("cx", function(d) {
                 return xScale(d.album.released);
             })
+            .attr("cy", 0)
+            .transition()
+            .duration(1500)
             .attr("cy", function(d) {
-                // i recks would be nice if this was based on say, public popularity?... dunno, just thinking, say, downloads vs critical review might be interesting.
+                // i recks would be nice if this was based on say, public popularity?... dunno, just 
+                // thinking, say, downloads vs critical review might be interesting.
                 // ... but for now, based on rScale
                 return yScale(d.score);
             })
             .attr("r", function(d) {
                 // will be based on score
-                console.log(rScale(d.score));
                 return rScale(d.score);
             });
 
-        // this bit doesn't work atm... i just wanted to see which blobs correspond to which album to get a better understanding.
+        // this bit doesn't work atm... i just wanted to see which blobs correspond to which album to 
+        // get a better understanding.
         svg.selectAll("text")
             .data(dataset)
             .enter()
             .append("text")
             .text(function(d) {
-                console.log("setting text" + d.album.name);
                 return d.album.name;
             })
             .attr("x", function(d) {
@@ -172,5 +188,5 @@
             .call(xAxis);
     }
 
-    getArtist('6g0mn3tzAds6aVeUYRsryU').then(populateAlbumWithScore).then(drawVisualisation);
+    getArtist('56ZTgzPBDge0OvCGgMO3OY').then(populateAlbumWithScore).then(drawVisualisation);
 })();
