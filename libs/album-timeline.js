@@ -69,13 +69,21 @@
                         },
                         success: function(response) {
                             var total_pop = 0;
+                            var total_length = 0;
+                            var track_artist_array = [];
                             // Add popularity for each track
                             $.each(response.album.tracks, function(index, track) {
                                 total_pop += track.popularity * 100;
+                                total_length += track.length;
+                                $.each(track.artists, function(index, artist) {
+                                    if (!_.contains(track_artist_array, artist.href))
+                                        track_artist_array.push(artist.href);
+                                })
                             });
                             album.score = total_pop / response.album.tracks.length;
                             album.trackCount = response.album.tracks.length;
-
+                            album.totalLength = total_length;
+                            album.smellsLikeACompilation = track_artist_array.length > 3;
                             dfd.resolve(response);
                         }
                     });
@@ -94,9 +102,9 @@
     }
 
     isAnAlbum = function(album) {
-        console.log(album);
-        if (album.album.trackCount < 5) //Subjective call!
+        if (album.trackCount < 4 || album.totalLength < 1000 || album.smellsLikeACompilation) { //Subjective call!
             return false;
+        }
         return true;
     }
 
