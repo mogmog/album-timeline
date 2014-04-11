@@ -58,42 +58,52 @@ function getAlbumScore(albumHref) {
     });
 }
 
+
+
 $.when(
+    // request album data
     getData())
     .then(
     // after getData()
     function (data) {
-        var node = svg.selectAll('.album-node')
-            .data(data.artist.albums)
-            .enter()
-            .append('g')
-            .attr('class', 'album-node');
+        // draw the nodes
+        drawNodes(data);
 
-        node.append('text')
-            .attr('y', function (d, i) {
-                return lineheight * i;
-            })
-            .text(function (d) {
-                console.log(d);
-                return d.album.name;
-            });
-
-
+        // create an array of requests to fetch album scores
         var calls = [];
         $.each(data.artist.albums, function (index, item) {
             calls.push(getAlbumScore(item.album.href));
 
         });
+
+        // then apply this sequence of requests
         $.when.apply($, calls)
             .then(function (data) {
+                // after the sequence of requests is complete, all
+                // the data we want should be in dataset (in data[0])
+                // so we can setup the axes
                 console.log("------fetched album score!");
                 console.log(data);
                 setupAxes(data[0]);
             })
+});
 
+function drawNodes(data) {
+    var node = svg.selectAll('.album-node')
+        .data(data.artist.albums)
+        .enter()
+        .append('g')
+        .attr('class', 'album-node');
 
-    });
-
+    node.append('text')
+        .attr('y', function (d, i) {
+            return lineheight * i;
+        })
+        .text(function (d) {
+            console.log(d);
+            return d.album.name;
+        });
+}
 
 function setupAxes(data) {
     var xScale = d3.scale.linear()
@@ -138,6 +148,7 @@ function setupAxes(data) {
             return rScale(d[1]);
         });
 
+    // this bit doesn't work atm... i just wanted to see which blobs correspond to which album to get a better understanding.
     svg.selectAll("text")
         .data(dataset)
         .enter()
