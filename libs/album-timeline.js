@@ -145,18 +145,19 @@
             .enter()
             .append("text")
             .text(function(d) {
-                console.log("setting text" + d[2]);
-                return d[2];
+                console.log("setting text" + d.album.name);
+                return d.album.name;
             })
             .attr("x", function(d) {
-                return xScale(d[0]);
+                return xScale(d.album.released);
             })
             .attr("y", function(d) {
-                return yScale(d[1]);
+                return yScale(d.score);
             })
+            .attr("text-anchor", "middle")
             .attr("font-family", "sans-serif")
             .attr("font-size", "11px")
-            .attr("fill", "red");
+            .attr("fill", "black");
 
 
         // create axes
