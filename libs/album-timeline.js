@@ -50,8 +50,8 @@ function getAlbumScore(albumHref) {
         console.log("href: " + albumHref);
 
         console.log(total_pop);
-        dataset.push([data.album.released, total_pop]);
-        console.log("pushing - " + data.album.released + ", " + total_pop);
+        dataset.push([data.album.released, total_pop, data.album.name]);
+        console.log("pushing - " + data.album.released + ", " + total_pop +", name, "+data.album.name);
 
     }).fail(function () {
         console.log("Error retrieving info for album " + albumId);
@@ -137,6 +137,24 @@ function setupAxes(data) {
             // will be based on score
             return rScale(d[1]);
         });
+
+    svg.selectAll("text")
+        .data(dataset)
+        .enter()
+        .append("text")
+        .text(function(d) {
+            console.log("setting text"+d[2]);
+            return d[2];
+        })
+        .attr("x", function(d) {
+            return xScale(d[0]);
+        })
+        .attr("y", function(d) {
+            return yScale(d[1]);
+        })
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "11px")
+        .attr("fill", "red");
 
 
     // create axes
