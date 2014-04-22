@@ -118,7 +118,7 @@ albumTimeline.directive("timelineviz",
                         clearVisualisation();
                         getArtist(asyncSelected.href).then(populateAlbumWithScore).then(function(albums) {
                             console.log('Loaded');
-                            if (albums) drawVisualisation(albums)
+                            if (albums) {drawVisualisation(albums);}
                         });
                     }
                 });
@@ -175,6 +175,14 @@ albumTimeline.directive("timelineviz",
                         })])
                         .range([0, 50]);
 
+                    var opacityScale = d3.scale.linear()
+                        .domain([d3.min(dataset, function(d) {
+                            return d.score;
+                        }), d3.max(dataset, function(d) {
+                            return d.score;
+                        })])
+                        .range([0.9,0.35]);
+
                     svg.selectAll("circle")
                         .data(dataset)
                         .enter()
@@ -182,7 +190,7 @@ albumTimeline.directive("timelineviz",
                         .attr("fill", function(d) {
                             return color(d.album.name);
                         })
-                        .attr("fill-opacity", 0.9)
+                        .attr("fill-opacity", function(d) {return opacityScale(d.score);})
                         .attr("cx", function(d) {
                             return xScale(d.album.released);
                         })
