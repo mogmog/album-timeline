@@ -74,7 +74,7 @@ albumTimeline.controller('TypeaheadCtrl', ['$scope', '$http',
         $scope.getArtists = function(val) {
             return $http.get('http://ws.spotify.com/search/1/artist?', {
                 params: {
-                    q: val,
+                    q: '*' + val + '*',
                 }
             }).then(function(res) {
                 return res.data.artists;
