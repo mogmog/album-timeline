@@ -82,7 +82,7 @@ albumTimeline.controller('TypeaheadCtrl', ['$scope', '$http',
                     q: val,
                 }
             }).then(function(res) {
-            return res.data.artists;
+                return res.data.artists;
             });
         }
     }
@@ -100,12 +100,14 @@ albumTimeline.directive('timelineviz', ['artistService', 'addScoreService',
 
                 scope.$watch('asyncSelected', function(asyncSelected) {
                     if (asyncSelected) {
-                        console.log('loading albums...');
+                        $('#container').hide();
+                        $('#spinner').show();
                         clearVisualisation();
                         artistService.getArtist(asyncSelected.href).then(function(artist) {
                             return addScoreService.populate(artist.data.artist);
                         }).then(function(artist) {
-                            console.log('Loaded');
+                            $('#container').show();
+                            $('#spinner').hide();
                             drawVisualisation(artist);
                         });
                     }
