@@ -1,140 +1,120 @@
 var albumTimeline = angular.module('albumApp', ['ui.bootstrap']);
 
+albumTimeline.factory('artistService', function($http) {
+    return {
+        getArtist: function(artistHref) {
+            return $http.get('http://ws.spotify.com/lookup/1/.json', {
+                params: {
+                    uri: artistHref,
+                    extras: 'albumdetail'
+                }
+            }).then(function(artist) {
+                return artist;
+            });
+        }
+    }
+});
+
+albumTimeline.factory('addScoreService', function($http, $q) {
+    return {
+        populate: function(artist) {
+            var albumList = artist.albums;
+            var promises = albumList.map(function(album) {
+                var deferred = $q.defer();
+
+                $http.get(
+                    'http://ws.spotify.com/lookup/1/.json', {
+                        params: {
+                            uri: album.album.href,
+                            extras: 'trackdetail'
+                        }
+                    }).success(function(data) {
+                    deferred.resolve(data);
+                });
+
+                return deferred.promise;
+            });
+
+
+            var isAnAlbum = function(album) {
+                // console.log(album.album.name + ":" + album.score);
+                if (album.trackCount < 5 || album.totalLength < 1000 || album.smellsLikeACompilation) { //Subjective call!
+                    return false;
+                }
+                return true;
+            }
+
+            return $q.all(promises).then(function(results) {
+                var returnList = results.map(function(album) {
+                    var total_pop = 0;
+                    var total_length = 0;
+                    var track_artist_array = [];
+                    // Add popularity for each track
+                    $.each(album.album.tracks, function(index, track) {
+                        total_pop += track.popularity * 100;
+                        total_length += track.length;
+                        $.each(track.artists, function(index, artist) {
+                            if (!_.contains(track_artist_array, artist.href))
+                                track_artist_array.push(artist.href);
+                        })
+                    });
+                    album.score = total_pop / album.album.tracks.length;
+                    album.trackCount = album.album.tracks.length;
+                    album.totalLength = total_length;
+                    album.smellsLikeACompilation = track_artist_array.length > 3;
+                    return album;
+                });
+                returnList = _.filter(returnList, function(album) {
+                    return album.album.availability.territories.match(/GB/) && album.info.type === 'album' && isAnAlbum(album);
+                });
+                artist.albums = returnList;
+                return artist;
+            });
+        }
+    }
+});
+
 albumTimeline.controller('TypeaheadCtrl', ['$scope', '$http',
     function($scope, $http) {
         $scope.getArtists = function(val) {
-
             return $http.get('http://ws.spotify.com/search/1/artist?', {
                 params: {
                     q: val,
                 }
             }).then(function(res) {
-                return res.data.artists;
+            return res.data.artists;
             });
         }
     }
 ]);
 
 
-albumTimeline.directive("timelineviz",
-    function() {
+albumTimeline.directive('timelineviz', ['artistService', 'addScoreService',
+    function(artistService, addScoreService) {
         return {
             restrict: 'E',
             //scope : {directiveArtist : artist}// selective 
             template: '<div id="vis-container"></div>',
             controller: function($scope) {},
-            link: function(scope) {
-                // run array of promises
-                var all = function(array) {
-                    var deferred = $.Deferred();
-                    var fulfilled = 0,
-                        length = array.length;
-                    var results = [];
+            link: function(scope, elements, attrs) {
 
-                    if (length === 0) {
-                        deferred.resolve(results);
-                    } else {
-                        array.forEach(function(promise, i) {
-                            $.when(promise()).then(function(value) {
-                                results[i] = value;
-                                fulfilled++;
-                                if (fulfilled === length) {
-                                    deferred.resolve(results);
-                                }
-                            });
-                        });
-                    }
-
-                    return deferred.promise();
-                };
-
-                getArtist = function(artistHref) {
-                    var promise = $.ajax({
-                        url: 'http://ws.spotify.com/lookup/1/.json',
-                        type: 'GET',
-                        dataType: 'json',
-                        data: {
-                            uri: artistHref,
-                            extras: 'albumdetail'
-                        }
-                    });
-                    return promise.then(function(artist) {
-                        return artist;
-                    });
-                }
-
-                populateAlbumWithScore = function(artistWithAlbums) {
-
-                    var promises = []; // array of deferred objects
-
-                    artistWithAlbums.artist.albums.forEach(function(album) {
-                        promises.push(function() {
-                            return $.Deferred(function(dfd) {
-                                $.ajax({
-                                    url: 'http://ws.spotify.com/lookup/1/.json',
-                                    type: 'GET',
-                                    dataType: 'json',
-                                    data: {
-                                        uri: album.album.href,
-                                        extras: 'trackdetail'
-                                    },
-                                    success: function(response) {
-                                        var total_pop = 0;
-                                        var total_length = 0;
-                                        var track_artist_array = [];
-                                        // Add popularity for each track
-                                        $.each(response.album.tracks, function(index, track) {
-                                            total_pop += track.popularity * 100;
-                                            total_length += track.length;
-                                            $.each(track.artists, function(index, artist) {
-                                                if (!_.contains(track_artist_array, artist.href))
-                                                    track_artist_array.push(artist.href);
-                                            })
-                                        });
-                                        album.score = total_pop / response.album.tracks.length;
-                                        album.trackCount = response.album.tracks.length;
-                                        album.totalLength = total_length;
-                                        album.smellsLikeACompilation = track_artist_array.length > 3;
-                                        dfd.resolve(response);
-                                    }
-                                });
-                            }).promise();
-                        });
-                    });
-
-                    return $.when(all(promises)).then(function(results) {
-                        artistWithAlbums.artist.albums = _.filter(artistWithAlbums.artist.albums, function(album) {
-                            return album.album.availability.territories.match(/GB/) && album.info.type === 'album' && isAnAlbum(album);
-                        });
-
-                        return artistWithAlbums;
-                    });
-                }
-
-                // Do business logic [call a service]
                 scope.$watch('asyncSelected', function(asyncSelected) {
                     if (asyncSelected) {
                         console.log('loading albums...');
                         clearVisualisation();
-                        getArtist(asyncSelected.href).then(populateAlbumWithScore).then(function(albums) {
+                        artistService.getArtist(asyncSelected.href).then(function(artist) {
+                            return addScoreService.populate(artist.data.artist);
+                        }).then(function(artist) {
                             console.log('Loaded');
-                            if (albums) {drawVisualisation(albums);}
+                            drawVisualisation(artist);
                         });
                     }
                 });
 
-                isAnAlbum = function(album) {
-                    console.log(album.album.name + ":" + album.score);
-                    if (album.trackCount < 5 || album.totalLength < 1000 || album.smellsLikeACompilation) { //Subjective call!
-                        return false;
-                    }
-                    return true;
-                }
-
                 // handy: http://alignedleft.com/content/03-tutorials/01-d3/160-axes/5.html
                 // http://alignedleft.com/tutorials/d3/axes
-                drawVisualisation = function(data) {
-                    var dataset = data.artist.albums;
+                drawVisualisation = function(artist) {
+                    var dataset = artist.albums;
 
                     var width = 1000,
                         height = 400,
@@ -149,7 +129,7 @@ albumTimeline.directive("timelineviz",
                         .attr("height", height);
 
                     var lineheight = 20;
-                    d3.select("#artist-name").text(data.artist.name);
+                    d3.select("#artist-name").text(artist.name);
 
                     var xScale = d3.scale.linear()
                         .domain([d3.min(dataset, function(d) {
@@ -181,7 +161,7 @@ albumTimeline.directive("timelineviz",
                         }), d3.max(dataset, function(d) {
                             return d.score;
                         })])
-                        .range([0.9,0.35]);
+                        .range([0.9, 0.35]);
 
                     svg.selectAll("circle")
                         .data(dataset)
@@ -190,7 +170,9 @@ albumTimeline.directive("timelineviz",
                         .attr("fill", function(d) {
                             return color(d.album.name);
                         })
-                        .attr("fill-opacity", function(d) {return opacityScale(d.score);})
+                        .attr("fill-opacity", function(d) {
+                            return opacityScale(d.score);
+                        })
                         .attr("cx", function(d) {
                             return xScale(d.album.released);
                         })
@@ -248,4 +230,5 @@ albumTimeline.directive("timelineviz",
                 }
             }
         }
-    });
+    }
+]);
