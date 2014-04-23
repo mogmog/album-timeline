@@ -35,13 +35,8 @@ albumTimeline.factory('addScoreService', function($http, $q) {
                 return deferred.promise;
             });
 
-
             var isAnAlbum = function(album) {
-                // console.log(album.album.name + ":" + album.score);
-                if (album.trackCount < 5 || album.totalLength < 1000 || album.smellsLikeACompilation) { //Subjective call!
-                    return false;
-                }
-                return true;
+                return album.trackCount > 5 && album.totalLength > 1000 && !album.smellsLikeACompilation;
             }
 
             return $q.all(promises).then(function(results) {
